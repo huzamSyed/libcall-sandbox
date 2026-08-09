@@ -1,0 +1,35 @@
+# LLVM/compiler generated files
+*.ll
+*.bc
+
+# Generated graphs
+graph.dot
+*.png
+*.svg
+
+# Build directories
+build/
+cmake-build-*/
+
+# Python
+__pycache__/
+*.pyc
+
+# Linux kernel build artifacts
+*.o
+*.ko
+*.mod
+*.cmd
+*.order
+*.symvers
+
+# QEMU/VM artifacts
+*.img
+*.qcow2
+*.iso
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~

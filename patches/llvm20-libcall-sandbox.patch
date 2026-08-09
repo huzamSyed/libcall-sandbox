@@ -1,0 +1,1414 @@
+diff --git a/llvm/include/llvm/Transforms/Utils/HelloWorld.h b/llvm/include/llvm/Transforms/Utils/HelloWorld.h
+index e29dda5458..5208c1f3a1 100644
+--- a/llvm/include/llvm/Transforms/Utils/HelloWorld.h
++++ b/llvm/include/llvm/Transforms/Utils/HelloWorld.h
+@@ -8,14 +8,17 @@
+ 
+ #ifndef LLVM_TRANSFORMS_UTILS_HELLOWORLD_H
+ #define LLVM_TRANSFORMS_UTILS_HELLOWORLD_H
+-
++#include "llvm/IR/Module.h"
+ #include "llvm/IR/PassManager.h"
+ 
+ namespace llvm {
+ 
+ class HelloWorldPass : public PassInfoMixin<HelloWorldPass> {
+ public:
+-  PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
++  PreservedAnalyses run(Module &M, ModuleAnalysisManager &AM);
++  // Counter to ensure unique argument for each library call
++
++    // DummySyscallPass() : FunctionPass(ID) {}
+ };
+ 
+ } // namespace llvm
+diff --git a/llvm/lib/Passes/PassRegistry.def b/llvm/lib/Passes/PassRegistry.def
+index 0eb050c8ad..6b384af253 100644
+--- a/llvm/lib/Passes/PassRegistry.def
++++ b/llvm/lib/Passes/PassRegistry.def
+@@ -75,6 +75,7 @@ MODULE_PASS("function-import", FunctionImportPass())
+ MODULE_PASS("global-merge-func", GlobalMergeFuncPass())
+ MODULE_PASS("globalopt", GlobalOptPass())
+ MODULE_PASS("globalsplit", GlobalSplitPass())
++MODULE_PASS("helloworld", HelloWorldPass())
+ MODULE_PASS("hipstdpar-interpose-alloc", HipStdParAllocationInterpositionPass())
+ MODULE_PASS("hipstdpar-select-accelerator-code",
+             HipStdParAcceleratorCodeSelectionPass())
+@@ -376,7 +377,6 @@ FUNCTION_PASS("gc-lowering", GCLoweringPass())
+ FUNCTION_PASS("guard-widening", GuardWideningPass())
+ FUNCTION_PASS("gvn-hoist", GVNHoistPass())
+ FUNCTION_PASS("gvn-sink", GVNSinkPass())
+-FUNCTION_PASS("helloworld", HelloWorldPass())
+ FUNCTION_PASS("indirectbr-expand", IndirectBrExpandPass(TM))
+ FUNCTION_PASS("infer-address-spaces", InferAddressSpacesPass())
+ FUNCTION_PASS("infer-alignment", InferAlignmentPass())
+diff --git a/llvm/lib/Transforms/Utils/HelloWorld.cpp b/llvm/lib/Transforms/Utils/HelloWorld.cpp
+index 1098281fa0..7dd60dbc51 100644
+--- a/llvm/lib/Transforms/Utils/HelloWorld.cpp
++++ b/llvm/lib/Transforms/Utils/HelloWorld.cpp
+@@ -1,18 +1,1354 @@
+-//===-- HelloWorld.cpp - Example Transformations --------------------------===//
+-//
+-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+-// See https://llvm.org/LICENSE.txt for license information.
+-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-//
+-//===----------------------------------------------------------------------===//
++// // //===-- HelloWorld.cpp - Example Transformations --------------------------===//
++// // //
++// // // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// // // See https://llvm.org/LICENSE.txt for license information.
++// // // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++// // //
++// // //===----------------------------------------------------------------------===//
+ 
++// // #include "llvm/Transforms/Utils/HelloWorld.h"
++// // #include "llvm/IR/Function.h"
++// // #include<set>
++// // #include<string>
++// // #include "llvm/IR/Function.h"
++// // #include "llvm/IR/Instructions.h"
++// // #include "llvm/Pass.h"
++// // #include "llvm/Support/raw_ostream.h"
++// // #include "llvm/IR/Module.h"
++// // #include<iostream>
++// // #include<vector>
++// // #include<string>
++// // std::vector<llvm::Twine>v ; 
++
++// // using namespace llvm;
++// // bool isLibcFunction(const llvm::Function &F) {
++// //     static const std::set<std::string> libcFunctions = {
++// //         "printf", "malloc", "free", "memcpy", "memset", // Add more libc functions as needed
++// //     };
++
++// //     return libcFunctions.find(F.getName().str()) != libcFunctions.end();
++// // }
++// // class Node
++// // {
++// //    public : 
++// //    Node*next = nullptr ; 
++// //    int val ;
++// //    llvm::StringRef T ;   
++// // };
++// // PreservedAnalyses HelloWorldPass::run(Module &M,
++// //                                        ModuleAnalysisManager &MAM) {
++   
++// //     int count = 0 ; 
++// //     for(Function &F : M ) {
++
++       
++
++
++
++
++// //       //errs()<< F.getName()<<" ";
++// //       count++;}
++// //     Node*arr[count] ; 
++// //            int i =0 ; 
++// //            for (Function &F : M) {
++                
++// //              if (F.isIntrinsic()) {
++// //             continue; // Not a user-defined function
++// //         }
++
++// //         // 2. Check if function is a declaration (skip external functions without body)
++// //         if (F.isDeclaration()) {
++// //             continue; // External function, not user-defined
++// //         }
++
++// //         // 3. Optional: Filter out known library functions by name
++// //         llvm::StringRef funcName = F.getName();
++// //         if (funcName == "malloc" || funcName == "free" || funcName == "printf") {
++// //             continue; // Library function, skip
++// //         }
++
++// //         // If it passes all checks, it's a user-defined function
++// //         errs() << "User-defined function: " << funcName << "\n";
++
++     
++// //       arr[i] = new Node() ; 
++// //      Node*curr = arr[i] ; 
++// //       llvm::StringRef Fname =  F.getName() ;
++// //       curr->T = Fname ;  
++// //   // errs() <<F.getName() << "\n";
++
++
++// //    for (BasicBlock &BB : F) {
++// //         // Iterate over each instruction in the basic block
++//     //     for (Instruction &I : BB) {
++//     //       // Check if the instruction is a CallInst or InvokeInst
++//     //       if (CallInst *call = dyn_cast<CallInst>(&I)) {
++//     //         // Get the called function (it can be null for indirect calls)
++//     //         if (Function *calledFunc = call->getCalledFunction()) {
++//     //           // Print the name of the called function
++//     //           {
++//     //            // errs() << "Function call to: " << calledFunc->getName() << "\n";
++//     //             curr->next = new Node() ; 
++//     //   llvm::StringRef Fname1 =  calledFunc->getName() ;
++//     //   curr->T = Fname1 ;  
++//     //             curr = curr->next ; 
++//     //           }
++//     //         } else {
++//     //  //         errs() << "Indirect function call\n";
++//     //         }
++//     //       } else if (InvokeInst *invoke = dyn_cast<InvokeInst>(&I)) {
++//     //         if (Function *calledFunc = invoke->getCalledFunction()) {
++//     //           // Print the name of the called function for invoke
++//     //           {
++//     //    //         errs() << "Function call (invoke) to: " << calledFunc->getName() << "\n";
++//     //             curr->next = new Node() ; 
++//     //     llvm::StringRef Fname2=  calledFunc->getName() ;
++//     //   curr->T = Fname2 ;              
++//     //           }
++//     //         } else {
++//     //      //     errs() << "Indirect function call (invoke)\n";
++//     //         }
++//     //       }
++//     //     }       
++//     //    }
++
++// // i++;
++
++
++// //             }
++ 
++  
++//   // for(int j =0 ; j<i ; j++)
++//   // {
++//   //    Node*curr = arr[j];
++//   //    while(curr)
++//   //    {
++//   //     llvm::Twine t = curr->T ; 
++//   //     errs() << t << " ";
++//   //     curr = curr->next ; 
++//   //    }
++//   //    errs() << "\n";
++//   // }
++    
++
++// //   return PreservedAnalyses::all();
++// // }
++// #include "llvm/Support/raw_ostream.h"
++// #include<vector>
++// #include "llvm/Transforms/Utils/HelloWorld.h"
++// #include "llvm/IR/Function.h"
++// #include<set>
++// #include<string>
++// #include "llvm/IR/Function.h"
++// #include "llvm/IR/Instructions.h"
++// #include "llvm/Pass.h"
++// #include "llvm/Support/raw_ostream.h"
++// #include "llvm/IR/Module.h"
++// #include<iostream>
++// #include<vector>
++// #include<string>
++// #include "llvm/IR/BasicBlock.h"
++// #include "llvm/IR/Instructions.h"
++// #include "llvm/Pass.h"
++// #include "llvm/IR/Function.h"
++// #include "llvm/IR/InstrTypes.h"
++// #include<map>
++// #include <fstream>
++// #include "llvm/IR/Function.h"
++// #include "llvm/IR/IRBuilder.h"
++// #include "llvm/IR/InstrTypes.h"
++// #include "llvm/IR/LegacyPassManager.h"
++
++// #include "llvm/Passes/PassBuilder.h"
++// #include "llvm/Passes/PassPlugin.h"
++// using namespace std;
++// std::vector<llvm::Twine>v ; 
++
++// using namespace llvm;
++// bool isLibcFunction(std::string F) {
++//     static const std::set<std::string> libcFunctions =
++// { "rand", "malloc", "abort", "exit", "atexit", "system", "calloc", "realloc", "free", "memalign", "strlen", "strcpy", "strncpy", "strcat", "strncat", "strcmp", "strncmp", "strchr", "strstr", "isalnum", "isalpha", "isdigit", "isspace", "tolower", "toupper", "printf", "scanf", "fprintf", "fscanf", "fgets", "fputs", "getchar", "putchar", "fopen", "fclose", "fread", "fwrite", "fseek", "ftell", "rewind", "time", "difftime", "mktime", "strftime", "abs", "fabs", "pow", "sqrt", "sin", "cos", "tan", "log", "exp", "fork", "execvp", "wait", "getpid", "getppid", "signal", "raise", "kill", "dlopen", "dlsym", "dlclose", "getenv", "setenv", "unsetenv", "atoi", "atof", "strtol", "strtod", "assert" };
++ 
++
++
++
++//     return libcFunctions.find(F) != libcFunctions.end();
++// }
++// int nodeCount = 0 ; 
++// class Node
++// {
++//    public : 
++//    Node*next = nullptr ; 
++//    int val ;
++//    std::vector<llvm::StringRef> T ;
++//    std::vector<Node*>neigh;   
++//    Node*Last=nullptr; 
++//    bool endBlock = false ;
++//    bool ret = false ; 
++//    bool visited = false ; 
++//    Node() 
++//    {
++//     val = nodeCount++;
++//    }
++// };
++// class gNode
++// {
++//   public :
++//   llvm::StringRef t ;
++//   int val ;  
++// };
++// vector<vector<gNode>>graph;
++// void visit(Node*node,bool visited[])
++// {
++     
++//      visited[node->val] = true ;
++//      for(int i = 0 ; i<node->neigh.size() ; i++)
++//      {      
++//        gNode x ; 
++//        x.val = node->neigh[i]->val;
++//        x.t   = node->T[i]        ; 
++//        if(x.t.str() == "calculateSum" )
++//        {
++//         errs()<<visited[node->neigh[i]->val]<<":visted/notviisted";
++//        }
++//        graph[node->val].push_back(x);
++//        if(!visited[node->neigh[i]->val])
++//        visit(node->neigh[i],visited);   
++//      }
++    
++// }
++
++// class funcs
++// {
++//    public : 
++//    Node*firstBlock ; 
++//    std::vector<Node*>returnBlocks;
++//    bool done = false ;  
++// };
++// void callCfg(BasicBlock BB,int visited[] )
++// {
++    
++// }
++// void exportToDot(const vector<vector<gNode>>& graph, int countNode, const string& filename) {
++//     ofstream outfile(filename);
++
++//     // Start the DOT file
++//     outfile << "digraph G {" << endl;
++
++//     // Iterate through the adjacency list
++//     for (int i = 0; i < countNode; ++i) {
++//         for (const auto& neighbor : graph[i]) {
++//             // Print an edge from node 'i' to node 'neighbor.val' with weight 'neighbor.t'
++//             outfile << "    " << i << " -> " << neighbor.val 
++//                     << " [label=\"" << neighbor.t.str() << "\"];" << endl;
++//         }
++//     }
++
++//     // End the DOT file
++//     outfile << "}" << endl;
++
++//     outfile.close();
++// }
++// std::map<std::string, int> createLibcFunctionMap() {
++//     std::map<std::string, int> mp;
++//     std::vector<std::string> libcFunctions = 
++// { "rand", "malloc", "abort", "exit", "atexit", "system", "calloc", "realloc", "free", "memalign", "strlen", "strcpy", "strncpy", "strcat", "strncat", "strcmp", "strncmp", "strchr", "strstr", "isalnum", "isalpha", "isdigit", "isspace", "tolower", "toupper", "printf", "scanf", "fprintf", "fscanf", "fgets", "fputs", "getchar", "putchar", "fopen", "fclose", "fread", "fwrite", "fseek", "ftell", "rewind", "time", "difftime", "mktime", "strftime", "abs", "fabs", "pow", "sqrt", "sin", "cos", "tan", "log", "exp", "fork", "execvp", "wait", "getpid", "getppid", "signal", "raise", "kill", "dlopen", "dlsym", "dlclose", "getenv", "setenv", "unsetenv", "atoi", "atof", "strtol", "strtod", "assert" };
++
++//     int uniqueNumber = 1;
++//     for (const auto& func : libcFunctions) {
++//         mp[func] = uniqueNumber++;
++//     }
++
++//     return mp;
++// }
++
++// PreservedAnalyses HelloWorldPass::run(Module &M,
++//                                        ModuleAnalysisManager &MAM) {
++
++
++    
++//      Node*num_To_Node[500];
++
++
++//      auto mp = createLibcFunctionMap();
++
++//     int fC = (int)M.size();
++//     funcs functions[fC]; 
++//     for(int i =0 ; i<fC ; i++)
++//     functions[i].firstBlock  = new Node(); 
++//     int idCount = 0 ; 
++//     std::map<std::string,int>name_To_Num ;
++//     std::map<int,std::string>num_To_Name;
++//     int kount = 0 ; 
++//     for(Function &F : M)
++//     {
++//        num_To_Name[kount] = F.getName().str(); 
++//        name_To_Num[F.getName().str()] = kount++;
++//     }
++//     for(Function &F : M )
++//     {
++      
++    
++//     // llvm::LLVMContext &Ctx = M->getContext();
++//     // llvm::IRBuilder<> Builder(Ctx);
++
++//     // // Declare your dummy syscall function
++//     // llvm::FunctionType *SyscallType = llvm::FunctionType::get(Builder.getVoidTy(), false);
++//     // llvm::Function *SyscallFunc = llvm::Function::Create(SyscallType, llvm::Function::ExternalLinkage, "dummy_syscall", M);
++      
++      
++//         errs()<< " the number of blocks in the function are "<<F.size()<<"\n";
++//         errs()<<" now we will enlist all the blocks one by one "<<"\n";
++//         int mx = 0 ; 
++//         for(BasicBlock &BB : F)
++//         {
++//            errs()<<"the number is : "<<BB.getNumber()<<"\n";
++//            mx  = std::max((int)BB.getNumber(),mx);
++//            errs() << "\n";
++//         }
++      
++//       Node*blocks[mx + 1] ;
++//        for(int i =0 ;i<=mx; i++)blocks[i] = nullptr ; 
++//       Node*curr ;
++//       bool f = true ; 
++//       for(BasicBlock &BB : F)
++//         {
++
++//          blocks[BB.getNumber()] = new Node() ; 
++//              if(f)
++//          {
++//               f = false ; 
++//               functions[name_To_Num[F.getName().str()]].firstBlock = blocks[BB.getNumber()];
++//               functions[name_To_Num[F.getName().str()]].done  =1 ; 
++//               if(F.getName().str() == "main")
++//               {
++//                 errs()<< "sizeddddd"<<functions[name_To_Num[F.getName().str()]].firstBlock->T.size()<<" "<<name_To_Num[F.getName().str()]; 
++                
++//               }
++//          }
++//          curr = blocks[BB.getNumber()]; 
++//                num_To_Node[curr->val] =  curr;
++//           bool r = false ; 
++//            Instruction *Terminator = BB.getTerminator();
++//             if (isa<ReturnInst>(Terminator))
++//             {
++//               r = true ;
++             
++//             }   
++//           for (Instruction &I : BB) {
++//           // Check if the instruction is a CallInst or InvokeInst
++
++//           if (CallInst *call = dyn_cast<CallInst>(&I)) {
++//             // Get the called function (it can be null for indirect calls)
++
++       
++
++
++//             if (Function *calledFunc = call->getCalledFunction()) {
++//               // Print the name of the called function
++//               {
++//                 errs() << "Function call to: " << calledFunc->getName() << "\n";
++//                 if(isLibcFunction(calledFunc->getName().str()))
++//                 {
++//                    llvm::LLVMContext &Ctx = M.getContext();
++//     llvm::IRBuilder<> Builder(Ctx);
++
++//     // Declare your dummy syscall function
++//     // llvm::FunctionType *SyscallType = llvm::FunctionType::get(Builder.getVoidTy(), false);
++//  //                llvm::FunctionType *SyscallType = llvm::FunctionType::get(Builder.getVoidTy(), false);
++//   //  llvm::Function *SyscallFunc = llvm::Function::Create(SyscallType, llvm::Function::ExternalLinkage, "dummy_syscall", M);
++//  FunctionType *SyscallType = FunctionType::get(Type::getVoidTy(Ctx), {Type::getInt32Ty(Ctx)}, false);
++//     int num_main ; 
++//     Function *SyscallFunc = Function::Create(SyscallType, Function::ExternalLinkage, "dummy_syscall", M);
++
++//                 Builder.SetInsertPoint(call);
++//             Value *ArgValue = ConstantInt::get(Type::getInt32Ty(Ctx), mp[calledFunc->getName().str()]); // Example argument
++//             Builder.CreateCall(SyscallFunc, {ArgValue});
++    
++//                 }
++//                 curr->next = new Node() ; 
++//                  num_To_Node[curr->next->val] =  curr->next;
++//                 //tawakkul
++//       llvm::StringRef Fname1 =  calledFunc->getName() ;
++//       curr->T.push_back(Fname1) ;  
++//       curr->neigh.push_back(curr->next);//amantubillahi
++//                 curr = curr->next ; 
++
++
++//               }
++//             } else {
++//               errs() << "we are currently inside"<<F.getName()<<" Indirect function call\n";
++//             }
++//           } else if (InvokeInst *invoke = dyn_cast<InvokeInst>(&I)) {
++//             if (Function *calledFunc = invoke->getCalledFunction()) {
++//               // Print the name of the called function for invoke
++//               {
++//                 errs() << "Function call (invoke) to: " << calledFunc->getName() << "\n";
++//                 curr->next = new Node() ; 
++                
++//                 llvm::StringRef Fname1 =  calledFunc->getName() ;
++//                 curr->T.push_back(Fname1) ; 
++//                 curr->neigh.push_back(curr->next);
++//                  num_To_Node[curr->next->val] =  curr->next;
++//                 curr = curr->next ; 
++                
++            
++//               }
++//             } else {
++//            errs() << "Indirect funtawakkulction call (invoke)\n";
++//             }
++//           }
++
++//         }   
++         
++        
++//           blocks[BB.getNumber()]->Last = curr;
++//           if(r)
++//           {
++//              errs()<<" return blocks for "<<F.getName()<<"\n";
++//              functions[name_To_Num[F.getName().str()]].returnBlocks.push_back(curr);
++//              curr->ret = true ; 
++//           }
++ 
++//   }
++         
++//           for(BasicBlock &BB : F)
++//           {
++//             curr =  blocks[BB.getNumber()]->Last ;
++//             curr->endBlock = true ; 
++//             const Instruction *TInst = BB.getTerminator(); 
++//                 if (TInst) {
++//         // Iterate over all successors of this block
++//       //stitching the blocks together 
++//         for (unsigned k = 0; k < TInst->getNumSuccessors(); ++k) {
++//           BasicBlock *SuccBB = TInst->getSuccessor(k);
++//           errs() << "Basic Block Successor: ";
++//           errs()<<" state of neigh is "<<"\n";
++
++//           errs()<<"\n";
++//           curr->neigh.push_back(blocks[SuccBB->getNumber()]);
++//           curr->T.push_back("ebsilon");
++//           for(int q = 0 ;q<curr->T.size() ; q++)
++//           errs()<<curr->T[q]<<" ";
++//           // errs() << "\n";
++//         }                 
++//           }
++//           }
++// // for(int j =0 ; j<=mx ; j++)
++// //   {
++// //      if(blocks[j]){
++// //      Node*curr = blocks[j];
++// //      errs()<<" all the successors of this block are  ";
++// //      for(int l =0 ;l<curr->neigh.size() ; l++)
++// //      {
++// //         errs()<<curr->neigh[l]<<" "; 
++// //      }
++// //      while(curr)
++// //      {
++// //       llvm::Twine t = curr->T ; 
++// //       errs() << t << " ";
++// //       curr = curr->next ; 
++      
++// //      }
++// //      errs() << "\n";
++// //      }
++// //         }
++// }
++//     errs()<<"\n";
++//     for(int i =0 ; i<0; i++)
++//     errs()<<num_To_Name[i]<<" "; 
++//     errs()<<"neighbours of firstblock of main\n";
++//     Node*cc = functions[name_To_Num["main"]].firstBlock ;
++//     errs()<<"\n\n\n\n";
++//     errs()<<functions[name_To_Num["main"]].returnBlocks[0]->val;
++//     std::vector<Node*>tt; 
++//     tt.push_back(cc);
++
++//     for(int i =0 ;i<fC; i++)
++//     {
++//         if(!functions[i].done)
++//         continue;
++//         vector<Node*>gg; 
++//         errs()<<num_To_Name[i]<<"\n";
++//         gg.push_back(functions[i].firstBlock);
++
++//         while(!gg.empty())
++//         {
++           
++//            Node*cur = gg[gg.size()-1];
++//            gg.pop_back();
++        
++         
++//           //  if(cur->val == 17)
++//           //  errs()<<" \nthe calccic"<<cur->T[0]<<"\n}}}";
++//            for(int j = 0 ; j<cur->T.size();j++)
++//            {
++//               if(!cur->neigh[j]->ret&&(!cur->neigh[j]->visited))
++//               {
++//                 errs()<<cur->T[j]<<"{}"<<"{"<<cur->neigh[j]->T[0]<<"}";
++//                 cur->neigh[j]->visited = true ; 
++//                 gg.push_back(cur->neigh[j]);
++//                if(cur->val == 18)
++//                errs()<<" \nthe calccic"<<cur->neigh[j]->val<<"\n}}}";
++//               }
++//               if(!isLibcFunction(cur->T[j].str())&&(cur->T[j].str()!="ebsilon"))
++//               {
++//                   Node*tr = cur->neigh[j];
++//                    if(cur->val == 17)
++//                     errs()<<"\n"<<cur->T[j].str()<<"$$$$$$";
++//                   cur->neigh[j] =  functions[name_To_Num[cur->T[j].str()]].firstBlock;
++//                             for(int l = 0 ; l<(int)functions[name_To_Num[cur->T[j].str()]].returnBlocks.size();l++)
++//           {
++//              functions[name_To_Num[cur->T[j].str()]].returnBlocks[l]->neigh.push_back(tr);
++//               functions[name_To_Num[cur->T[j].str()]].returnBlocks[l]->T.push_back("ebsilon");
++        
++//           }
++//               }
++//            }
++//         }
++//     }
++
++//     // while(!tt.empty())
++//     // {
++//     //     int runs = tt.size() ; 
++//     //     vector<Node*>ttt = tt; 
++//     //     while(!tt.empty())tt.pop_back();
++//     //     while(runs--)
++//     //     {
++//     //       cc = ttt[ttt.size()-1];
++//     //       for(int i = 0 ;i<(int)cc->T.size(); i++)
++//     //    { errs()<<cc->T[i]<<" "<<name_To_Num[cc->T[i].str()]<<"}";
++       
++//     //      if(!isLibcFunction(cc->T[i].str())&&(cc->T[i].str()!="ebsilon"))
++//     //      {
++//     //       errs()<<" a function call \n";
++//     //       Node*temp = cc->neigh[i]? cc->neigh[i] : cc ;
++    
++
++//     //       cc->neigh[i] = functions[name_To_Num[cc->T[i].str()]].firstBlock ;
++
++//     //       for(int l = 0 ; l<(int)functions[name_To_Num[cc->T[i].str()]].returnBlocks.size();l++)
++//     //       {
++//     //          functions[name_To_Num[cc->T[i].str()]].returnBlocks[l]->neigh.push_back(temp);
++//     //           functions[name_To_Num[cc->T[i].str()]].returnBlocks[l]->T.push_back("ebsilon");
++//     //          errs()<<" idhar "<<"\n";
++//     //       }
++//     //       if(!functions[name_To_Num[cc->T[i].str()]].done)
++//     //       {
++//     //           tt.push_back(cc->neigh[i]);
++//     //           functions[name_To_Num[cc->T[i].str()]].done = true ; 
++//     //       }
++         
++//     //      }
++//     //       else 
++//     //        tt.push_back(cc->neigh[i]);
++//     //    }
++//     //    ttt.pop_back();
++//     //     }
++//     //     //              if(cc== functions[name_To_Num["main"]].returnBlocks[0])
++//     //     // break;
++ 
++//     //     // for(int o = 0 ; o<cc->neigh.size() ; o++)
++//     //     // {
++//     //     //    tt.push_back(cc->neigh[o]);
++//     //     // }
++   
++      
++      
++
++//     // }
++//     cc = functions[name_To_Num["main"]].firstBlock ;
++//     errs()<<"start visit "<<"\n";
++//     for(int i =0 ; i<nodeCount +1 ; i++)
++//     {
++//       vector<gNode>temp ; 
++//       graph.push_back(temp);
++//     }
++//      bool visited[nodeCount+1] = {0} ;
++//     visit(cc,visited);
++//     for(int i =0 ;i<graph.size() ; i++)
++//     {
++//        errs()<<i<<"::";
++//        for(int j =0 ; j<graph[i].size() ; j++)
++//        errs()<<graph[i][j].t<<"->"<<graph[i][j].val<<",";
++//        errs()<<"\n";
++//     }
++//     // errs()<<cc->T[0]<<" "; 
++//     // cc = cc->neigh[0];
++//     // if(name_To_Num[T[0].str()])
++//     // {
++//     //   Node*temp  = cc->neigh[0];
++//     //   cc->neigh[0]= functions[name_To_Num[T[0].str()]].firstBlock;
++//     //  for(int i = 0 ; i< functions[name_To_Num[T[0].str()]].returnBlocks.size();i++)
++//     //  {
++//     //      functions[name_To_Num[T[0].str()]].returnBlocks[i]->neigh.push_back(temp);
++//     //  }
++//     // }
++//     // errs()<<cc->T[0]<<" ~";
++    
++//     //     for(BasicBlock &BB :  F)
++//                 //    {
++//                   // Get the terminator instruction of the basic block (if any)
++  
++//           // errs() <<"name:"<<BB.getName()<<" ";  // Print the successor block (for example)
++//           // errs() <<"size : "<<BB.size()<<" ";
++//           // int c = 0 ; 
++//           //   const Instruction *TInst = BB.getTerminator(); 
++//           //       if (TInst) {
++//         // Iterate over all successors of this block
++
++//         // for (unsigned i = 0; i < TInst->getNumSuccessors(); ++i) {
++//         //   BasicBlock *SuccBB = TInst->getSuccessor(i);
++//         //   errs() << "Basic Block Successor: ";
++//         //   SuccBB->print(errs());
++//         //   errs() << "\n";
++//         // }
++
++//           // for(auto i : BB)
++//           // {
++             
++//           //    errs<<i.getName()<<" ";
++//           // }
++//         //  errs() << "\n";
++        
++//   //   }
++//   //                  }
++//   //  }
++ 
++                    
++//   // for(int j =0 ; j<i ; j++)
++//   // {
++//   //    Node*curr = arr[j];
++//   //    while(curr)
++//   //    {
++//   //     llvm::Twine t = curr->T ; 
++//   //     errs() << t << " ";
++//   //     curr = curr->next ; 
++//   //    }
++//   //    errs() << "\n";
++
++
++//  errs()<<"18 ka neigh "<<num_To_Node[17]->neigh.size();
++//  exportToDot(graph, nodeCount, "graph.dot");
++//   return PreservedAnalyses::all();
++// }
++
++// // extern "C" ::llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() LLVM_ATTRIBUTE_WEAK;
++
++// // auto Plugin = PassPlugin::Load(PathToPlugin);
++// // if (!Plugin)
++// //   report_error();
++// // // Register plugin extensions in PassBuilder.
++// // Plugin.registerPassBuilderCallbacks(PB);
++
++// extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
++// llvmGetPassPluginInfo() {
++//   return {
++//     LLVM_PLUGIN_API_VERSION, "HelloWorld", LLVM_VERSION_STRING,
++//     [](PassBuilder &PB) {
++//       PB.registerPipelineParsingCallback(
++//         [](StringRef Name, ModulePassManager &MPM,
++//            ArrayRef<PassBuilder::PipelineElement>) {
++//           if (Name == "HelloWorld") {
++//             MPM.addPass(HelloWorldPass());
++//             return true;
++//           }
++//           return false;
++//         });
++//     }
++//   };
++// }
++// //===-- HelloWorld.cpp - Example Transformations --------------------------===//
++// //
++// // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
++// // See https://llvm.org/LICENSE.txt for license information.
++// // SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
++// //
++// //===----------------------------------------------------------------------===//
++
++// #include "llvm/Transforms/Utils/HelloWorld.h"
++// #include "llvm/IR/Function.h"
++// #include<set>
++// #include<string>
++// #include "llvm/IR/Function.h"
++// #include "llvm/IR/Instructions.h"
++// #include "llvm/Pass.h"
++// #include "llvm/Support/raw_ostream.h"
++// #include "llvm/IR/Module.h"
++// #include<iostream>
++// #include<vector>
++// #include<string>
++// std::vector<llvm::Twine>v ; 
++
++// using namespace llvm;
++// bool isLibcFunction(const llvm::Function &F) {
++//     static const std::set<std::string> libcFunctions = {
++//         "printf", "malloc", "free", "memcpy", "memset", // Add more libc functions as needed
++//     };
++
++//     return libcFunctions.find(F.getName().str()) != libcFunctions.end();
++// }
++// class Node
++// {
++//    public : 
++//    Node*next = nullptr ; 
++//    int val ;
++//    llvm::StringRef T ;   
++// };
++// PreservedAnalyses HelloWorldPass::run(Module &M,
++//                                        ModuleAnalysisManager &MAM) {
++   
++//     int count = 0 ; 
++//     for(Function &F : M ) {
++
++       
++
++
++
++
++//       //errs()<< F.getName()<<" ";
++//       count++;}
++//     Node*arr[count] ; 
++//            int i =0 ; 
++//            for (Function &F : M) {
++                
++//              if (F.isIntrinsic()) {
++//             continue; // Not a user-defined function
++//         }
++
++//         // 2. Check if function is a declaration (skip external functions without body)
++//         if (F.isDeclaration()) {
++//             continue; // External function, not user-defined
++//         }
++
++//         // 3. Optional: Filter out known library functions by name
++//         llvm::StringRef funcName = F.getName();
++//         if (funcName == "malloc" || funcName == "free" || funcName == "printf") {
++//             continue; // Library function, skip
++//         }
++
++//         // If it passes all checks, it's a user-defined function
++//         errs() << "User-defined function: " << funcName << "\n";
++
++     
++//       arr[i] = new Node() ; 
++//      Node*curr = arr[i] ; 
++//       llvm::StringRef Fname =  F.getName() ;
++//       curr->T = Fname ;  
++//   // errs() <<F.getName() << "\n";
++
++
++//    for (BasicBlock &BB : F) {
++//         // Iterate over each instruction in the basic block
++    //     for (Instruction &I : BB) {
++    //       // Check if the instruction is a CallInst or InvokeInst
++    //       if (CallInst *call = dyn_cast<CallInst>(&I)) {
++    //         // Get the called function (it can be null for indirect calls)
++    //         if (Function *calledFunc = call->getCalledFunction()) {
++    //           // Print the name of the called function
++    //           {
++    //            // errs() << "Function call to: " << calledFunc->getName() << "\n";
++    //             curr->next = new Node() ; 
++    //   llvm::StringRef Fname1 =  calledFunc->getName() ;
++    //   curr->T = Fname1 ;  
++    //             curr = curr->next ; 
++    //           }
++    //         } else {
++    //  //         errs() << "Indirect function call\n";
++    //         }
++    //       } else if (InvokeInst *invoke = dyn_cast<InvokeInst>(&I)) {
++    //         if (Function *calledFunc = invoke->getCalledFunction()) {
++    //           // Print the name of the called function for invoke
++    //           {
++    //    //         errs() << "Function call (invoke) to: " << calledFunc->getName() << "\n";
++    //             curr->next = new Node() ; 
++    //     llvm::StringRef Fname2=  calledFunc->getName() ;
++    //   curr->T = Fname2 ;              
++    //           }
++    //         } else {
++    //      //     errs() << "Indirect function call (invoke)\n";
++    //         }
++    //       }
++    //     }       
++    //    }
++
++// i++;
++
++
++//             }
++ 
++  
++  // for(int j =0 ; j<i ; j++)
++  // {
++  //    Node*curr = arr[j];
++  //    while(curr)
++  //    {
++  //     llvm::Twine t = curr->T ; 
++  //     errs() << t << " ";
++  //     curr = curr->next ; 
++  //    }
++  //    errs() << "\n";
++  // }
++    
++
++//   return PreservedAnalyses::all();
++// }
++#include "llvm/Support/raw_ostream.h"
++#include<vector>
+ #include "llvm/Transforms/Utils/HelloWorld.h"
+ #include "llvm/IR/Function.h"
++#include<set>
++#include<string>
++#include "llvm/IR/Function.h"
++#include "llvm/IR/Instructions.h"
++#include "llvm/Pass.h"
++#include "llvm/Support/raw_ostream.h"
++#include "llvm/IR/Module.h"
++#include<iostream>
++#include<vector>
++#include<string>
++#include "llvm/IR/BasicBlock.h"
++#include "llvm/IR/Instructions.h"
++#include "llvm/Pass.h"
++#include "llvm/IR/Function.h"
++#include "llvm/IR/InstrTypes.h"
++#include<map>
++#include <fstream>
++#include "llvm/IR/Function.h"
++#include "llvm/IR/IRBuilder.h"
++#include "llvm/IR/InstrTypes.h"
++#include "llvm/IR/LegacyPassManager.h"
++
++#include "llvm/Passes/PassBuilder.h"
++#include "llvm/Passes/PassPlugin.h"
++using namespace std;
++std::vector<llvm::Twine>v ; 
+ 
+ using namespace llvm;
++bool isLibcFunction(std::string F) {
++    static const std::set<std::string> libcFunctions = {
++        "printf", "malloc", "free", "memcpy", "memset","fopen","srand","rand","time","strlen","mmset","fprintf","fgets","sizeof","sprintf","max","exit" // Add more libc functions as needed
++    };
++
++    return libcFunctions.find(F) != libcFunctions.end();
++}
++int nodeCount = 0 ; 
++class Node
++{
++   public : 
++   Node*next = nullptr ; 
++   int val ;
++   std::vector<llvm::StringRef> T ;
++   std::vector<Node*>neigh;   
++   Node*Last=nullptr; 
++   bool endBlock = false ;
++   bool ret = false ; 
++   bool visited = false ; 
++   Node() 
++   {
++    val = nodeCount++;
++   }
++};
++class gNode
++{
++  public :
++  llvm::StringRef t ;
++  int val ;  
++};
++vector<vector<gNode>>graph;
++void visit(Node*node,bool visited[])
++{
++     
++     visited[node->val] = true ;
++     for(int i = 0 ; i<node->neigh.size() ; i++)
++     {      
++       gNode x ; 
++       x.val = node->neigh[i]->val;
++       x.t   = node->T[i]        ; 
++       if(x.t.str() == "calculateSum" )
++       {
++        errs()<<visited[node->neigh[i]->val]<<":visted/notviisted";
++       }
++       graph[node->val].push_back(x);
++       if(!visited[node->neigh[i]->val])
++       visit(node->neigh[i],visited);   
++     }
++    
++}
++
++class funcs
++{
++   public : 
++   Node*firstBlock ; 
++   std::vector<Node*>returnBlocks;
++   bool done = false ;  
++   bool noDef = false ; 
++};
++void callCfg(BasicBlock BB,int visited[] )
++{
++    
++}
++void exportToDot(const vector<vector<gNode>>& graph, int countNode, const string& filename) {
++    ofstream outfile(filename);
++
++    // Start the DOT file
++    outfile << "digraph G {" << endl;
++
++    // Iterate through the adjacency list
++    for (int i = 0; i < countNode; ++i) {
++        for (const auto& neighbor : graph[i]) {
++            // Print an edge from node 'i' to node 'neighbor.val' with weight 'neighbor.t'
++            outfile << "    " << i << " -> " << neighbor.val 
++                    << " [label=\"" << neighbor.t.str() << "\"];" << endl;
++        }
++    }
++
++    // End the DOT file
++    outfile << "}" << endl;
++
++    outfile.close();
++}
++std::map<std::string, int> createLibcFunctionMap() {
++    std::map<std::string, int> mp;
++    std::vector<std::string> libcFunctions = {
++        // Memory allocation
++        "malloc", "calloc", "realloc", "free",
++        // Input/Output
++        "printf", "scanf", "fprintf", "fscanf", "fopen", "fclose", "fread", "fwrite",
++        // String manipulation
++        "strcpy", "strncpy", "strcat", "strncat", "strcmp", "strncmp", "strlen",
++        // Memory manipulation
++        "memcpy", "memmove", "memset", "memcmp",
++        // Mathematical functions
++        "abs", "labs", "div", "ldiv", "sqrt", "pow", "exp", "log", "sin", "cos", "tan",
++        // Time-related functions
++        "time", "ctime", "gmtime", "localtime", "strftime",
++        // Process control
++        "exit", "abort", "atexit",
++        // Environment
++        "getenv", "system",
++        // Sorting and searching
++        "qsort", "bsearch",
++        // Integer arithmetics
++        "atoi", "atol", "strtol", "strtoul",
++        // Random number generation
++        "rand", "srand",
++        // Multibyte characters
++        "mblen", "mbtowc", "wctomb",
++        // Error handling
++        "perror", "strerror"
++    };
++
++    int uniqueNumber = 1;
++    for (const auto& func : libcFunctions) {
++        mp[func] = uniqueNumber++;
++    }
++
++    return mp;
++}
+ 
+-PreservedAnalyses HelloWorldPass::run(Function &F,
+-                                      FunctionAnalysisManager &AM) {
+-  errs() << F.getName() << "\n";
++PreservedAnalyses HelloWorldPass::run(Module &M,
++                                       ModuleAnalysisManager &MAM) {
++
++
++    
++   
++
++
++     auto mp = createLibcFunctionMap();
++
++    int fC = (int)M.size();
++    funcs functions[fC]; 
++    for(int i =0 ; i<fC ; i++)
++    functions[i].firstBlock  = new Node(); 
++    int idCount = 0 ; 
++    std::map<std::string,int>name_To_Num ;
++    std::map<int,std::string>num_To_Name;
++    int kount = 0 ; 
++    for(Function &F : M)
++    {
++       num_To_Name[kount] = F.getName().str(); 
++       name_To_Num[F.getName().str()] = kount++;
++      
++    }
++    for(Function &F : M)
++    {
++       
++       if(F.isDeclaration())
++       functions[name_To_Num[F.getName().str()]].noDef = true ;  
++       
++    }
++    for(Function &F : M )
++    {
++      
++    
++    // llvm::LLVMContext &Ctx = M->getContext();
++    // llvm::IRBuilder<> Builder(Ctx);
++
++    // // Declare your dummy syscall function
++    // llvm::FunctionType *SyscallType = llvm::FunctionType::get(Builder.getVoidTy(), false);
++    // llvm::Function *SyscallFunc = llvm::Function::Create(SyscallType, llvm::Function::ExternalLinkage, "dummy_syscall", M);
++      
++      
++        errs()<< " the number of blocks in the function are "<<F.size()<<"\n";
++        errs()<<" now we will enlist all the blocks one by one "<<"\n";
++        int mx = 0 ; 
++        for(BasicBlock &BB : F)
++        {
++           errs()<<"the number is : "<<BB.getNumber()<<"\n";
++           mx  = std::max((int)BB.getNumber(),mx);
++           errs() << "\n";
++        }
++      
++      Node*blocks[mx + 1] ;
++       for(int i =0 ;i<=mx; i++)blocks[i] = nullptr ; 
++      Node*curr ;
++      bool f = true ; 
++      for(BasicBlock &BB : F)
++        {
++
++         blocks[BB.getNumber()] = new Node() ; 
++             if(f)
++         {
++              f = false ; 
++              functions[name_To_Num[F.getName().str()]].firstBlock = blocks[BB.getNumber()];
++              functions[name_To_Num[F.getName().str()]].done  =1 ; 
++              if(F.getName().str() == "main")
++              {
++                errs()<< "sizeddddd"<<functions[name_To_Num[F.getName().str()]].firstBlock->T.size()<<" "<<name_To_Num[F.getName().str()]; 
++                
++              }
++         }
++         curr = blocks[BB.getNumber()]; 
++             
++          bool r = false ; 
++           Instruction *Terminator = BB.getTerminator();
++            if (isa<ReturnInst>(Terminator))
++            {
++              r = true ;
++             
++            }   
++          for (Instruction &I : BB) {
++          // Check if the instruction is a CallInst or InvokeInst
++
++          if (CallInst *call = dyn_cast<CallInst>(&I)) {
++            // Get the called function (it can be null for indirect calls)
++
++       
++
++
++            if (Function *calledFunc = call->getCalledFunction()) {
++              // Print the name of the called function
++              {
++                errs() << "Function call to: " << calledFunc->getName() << "\n";
++                if(isLibcFunction(calledFunc->getName().str()))//
++                {
++                   llvm::LLVMContext &Ctx = M.getContext();
++    llvm::IRBuilder<> Builder(Ctx);
++
++    // Declare your dummy syscall function
++    // llvm::FunctionType *SyscallType = llvm::FunctionType::get(Builder.getVoidTy(), false);
++ //                llvm::FunctionType *SyscallType = llvm::FunctionType::get(Builder.getVoidTy(), false);
++  //  llvm::Function *SyscallFunc = llvm::Function::Create(SyscallType, llvm::Function::ExternalLinkage, "dummy_syscall", M);
++ FunctionType *SyscallType = FunctionType::get(Type::getVoidTy(Ctx), {Type::getInt32Ty(Ctx)}, false);
++    int num_main ; 
++    Function *SyscallFunc = Function::Create(SyscallType, Function::ExternalLinkage, "dummy_syscall", M);
++
++                Builder.SetInsertPoint(call);
++            Value *ArgValue = ConstantInt::get(Type::getInt32Ty(Ctx), mp[calledFunc->getName().str()]); // Example argument
++            Builder.CreateCall(SyscallFunc, {ArgValue});
++    
++                }
++                curr->next = new Node() ; 
++                
++                //tawakkul
++      llvm::StringRef Fname1 =  calledFunc->getName() ;
++      curr->T.push_back(Fname1) ;  
++      curr->neigh.push_back(curr->next);//amantubillahi
++                curr = curr->next ; 
++
++
++              }
++            } else {
++              errs() << "we are currently inside"<<F.getName()<<" Indirect function call\n";
++            }
++          } else if (InvokeInst *invoke = dyn_cast<InvokeInst>(&I)) {
++            if (Function *calledFunc = invoke->getCalledFunction()) {
++              // Print the name of the called function for invoke
++              {
++                errs() << "Function call (invoke) to: " << calledFunc->getName() << "\n";
++               
++                
++                llvm::StringRef Fname1 =  calledFunc->getName() ;
++                curr->T.push_back(Fname1) ; 
++                curr->neigh.push_back(curr->next);
++                
++                curr = curr->next ; 
++                
++            
++              }
++            } else {
++           errs() << "Indirect funtawakkulction call (invoke)\n";
++            }
++          }
++
++        }   
++         
++        
++          blocks[BB.getNumber()]->Last = curr;
++          if(r)
++          {
++             errs()<<" return blocks for "<<F.getName()<<"\n";
++             functions[name_To_Num[F.getName().str()]].returnBlocks.push_back(curr);
++             curr->ret = true ; 
++          }
++ 
++  }
++         
++          for(BasicBlock &BB : F)
++          {
++            curr =  blocks[BB.getNumber()]->Last ;
++            curr->endBlock = true ; 
++            const Instruction *TInst = BB.getTerminator(); 
++                if (TInst) {
++        // Iterate over all successors of this block
++      //stitching the blocks together 
++        for (unsigned k = 0; k < TInst->getNumSuccessors(); ++k) {
++          BasicBlock *SuccBB = TInst->getSuccessor(k);
++          errs() << "Basic Block Successor: ";
++          errs()<<" state of neigh is "<<"\n";
++
++          errs()<<"\n";
++          curr->neigh.push_back(blocks[SuccBB->getNumber()]);
++          curr->T.push_back("ebsilon");
++          for(int q = 0 ;q<curr->T.size() ; q++)
++          errs()<<curr->T[q]<<" ";
++          // errs() << "\n";
++        }                 
++          }
++          }
++// for(int j =0 ; j<=mx ; j++)
++//   {
++//      if(blocks[j]){
++//      Node*curr = blocks[j];
++//      errs()<<" all the successors of this block are  ";
++//      for(int l =0 ;l<curr->neigh.size() ; l++)
++//      {
++//         errs()<<curr->neigh[l]<<" "; 
++//      }
++//      while(curr)
++//      {
++//       llvm::Twine t = curr->T ; 
++//       errs() << t << " ";
++//       curr = curr->next ; 
++      
++//      }
++//      errs() << "\n";
++//      }
++//         }
++}
++    errs()<<"\n";
++    for(int i =0 ; i<0; i++)
++    errs()<<num_To_Name[i]<<" "; 
++    errs()<<"neighbours of firstblock of main\n";
++    Node*cc = functions[name_To_Num["main"]].firstBlock ;
++    errs()<<"\n\n\n\n";
++    errs()<<functions[name_To_Num["main"]].returnBlocks.size();
++    std::vector<Node*>tt; 
++    tt.push_back(cc);
++
++    for(int i =0 ;i<fC; i++)
++    {
++        if(!functions[i].done)
++        continue;
++        vector<Node*>gg; 
++        errs()<<num_To_Name[i]<<functions[i].noDef<<"\n";
++        gg.push_back(functions[i].firstBlock);
++
++        while(!gg.empty())
++        {
++           
++           Node*cur = gg[gg.size()-1];
++           gg.pop_back();
++        
++         
++          //  if(cur->val == 17)
++          //  errs()<<" \nthe calccic"<<cur->T[0]<<"\n}}}";
++           for(int j = 0 ; j<cur->T.size();j++)
++           {
++              if(cur->neigh.size()>0&&cur->neigh[j]->T.size()>0&&!cur->neigh[j]->ret&&(!cur->neigh[j]->visited))
++              {
++                errs()<<cur->T[j]<<"{}"<<"{"<<cur->neigh[j]->T[0]<<"}";
++                cur->neigh[j]->visited = true ; 
++                gg.push_back(cur->neigh[j]);
++               if(cur->val == 18)
++               errs()<<" \nthe calccic"<<cur->neigh[j]->val<<"\n}}}";
++              }
++              if((!functions[name_To_Num[cur->T[j].str()]].noDef)&&!isLibcFunction(cur->T[j].str())&&(cur->T[j].str()!="ebsilon")&&(cur->T[j].str()!="exit"))
++              {
++                  errs()<<"\"_+_+"<<cur->T[j].str()<<"\n";
++                  Node*tr = cur->neigh[j];
++                   if(cur->val == 17)
++                    errs()<<"\n"<<cur->T[j].str()<<"$$$$$$";
++                  cur->neigh[j] =  functions[name_To_Num[cur->T[j].str()]].firstBlock;
++                            for(int l = 0 ; l<(int)functions[name_To_Num[cur->T[j].str()]].returnBlocks.size();l++)
++          {
++             functions[name_To_Num[cur->T[j].str()]].returnBlocks[l]->neigh.push_back(tr);
++              functions[name_To_Num[cur->T[j].str()]].returnBlocks[l]->T.push_back("ebsilon");
++        
++          }
++              }
++           }
++        }
++    }
++
++    // while(!tt.empty())
++    // {
++    //     int runs = tt.size() ; 
++    //     vector<Node*>ttt = tt; 
++    //     while(!tt.empty())tt.pop_back();
++    //     while(runs--)
++    //     {
++    //       cc = ttt[ttt.size()-1];
++    //       for(int i = 0 ;i<(int)cc->T.size(); i++)
++    //    { errs()<<cc->T[i]<<" "<<name_To_Num[cc->T[i].str()]<<"}";
++       
++    //      if(!isLibcFunction(cc->T[i].str())&&(cc->T[i].str()!="ebsilon"))
++    //      {
++    //       errs()<<" a function call \n";
++    //       Node*temp = cc->neigh[i]? cc->neigh[i] : cc ;
++    
++
++    //       cc->neigh[i] = functions[name_To_Num[cc->T[i].str()]].firstBlock ;
++
++    //       for(int l = 0 ; l<(int)functions[name_To_Num[cc->T[i].str()]].returnBlocks.size();l++)
++    //       {
++    //          functions[name_To_Num[cc->T[i].str()]].returnBlocks[l]->neigh.push_back(temp);
++    //           functions[name_To_Num[cc->T[i].str()]].returnBlocks[l]->T.push_back("ebsilon");
++    //          errs()<<" idhar "<<"\n";
++    //       }
++    //       if(!functions[name_To_Num[cc->T[i].str()]].done)
++    //       {
++    //           tt.push_back(cc->neigh[i]);
++    //           functions[name_To_Num[cc->T[i].str()]].done = true ; 
++    //       }
++         
++    //      }
++    //       else 
++    //        tt.push_back(cc->neigh[i]);
++    //    }
++    //    ttt.pop_back();
++    //     }
++    //     //              if(cc== functions[name_To_Num["main"]].returnBlocks[0])
++    //     // break;
++ 
++    //     // for(int o = 0 ; o<cc->neigh.size() ; o++)
++    //     // {
++    //     //    tt.push_back(cc->neigh[o]);
++    //     // }
++   
++      
++      
++
++    // }
++    cc = functions[name_To_Num["main"]].firstBlock ;
++    errs()<<"start visit "<<"\n";
++    for(int i =0 ; i<nodeCount +1 ; i++)
++    {
++      vector<gNode>temp ; 
++      graph.push_back(temp);
++    }
++     bool visited[nodeCount+1] = {0} ;
++    visit(cc,visited);
++    for(int i =0 ;i<graph.size() ; i++)
++    {
++       errs()<<i<<"::";
++       for(int j =0 ; j<graph[i].size() ; j++)
++       errs()<<graph[i][j].t<<"->"<<graph[i][j].val<<",";
++       errs()<<"\n";
++    }
++    // errs()<<cc->T[0]<<" "; 
++    // cc = cc->neigh[0];
++    // if(name_To_Num[T[0].str()])
++    // {
++    //   Node*temp  = cc->neigh[0];
++    //   cc->neigh[0]= functions[name_To_Num[T[0].str()]].firstBlock;
++    //  for(int i = 0 ; i< functions[name_To_Num[T[0].str()]].returnBlocks.size();i++)
++    //  {
++    //      functions[name_To_Num[T[0].str()]].returnBlocks[i]->neigh.push_back(temp);
++    //  }
++    // }
++    // errs()<<cc->T[0]<<" ~";
++    
++    //     for(BasicBlock &BB :  F)
++                //    {
++                  // Get the terminator instruction of the basic block (if any)
++  
++          // errs() <<"name:"<<BB.getName()<<" ";  // Print the successor block (for example)
++          // errs() <<"size : "<<BB.size()<<" ";
++          // int c = 0 ; 
++          //   const Instruction *TInst = BB.getTerminator(); 
++          //       if (TInst) {
++        // Iterate over all successors of this block
++
++        // for (unsigned i = 0; i < TInst->getNumSuccessors(); ++i) {
++        //   BasicBlock *SuccBB = TInst->getSuccessor(i);
++        //   errs() << "Basic Block Successor: ";
++        //   SuccBB->print(errs());
++        //   errs() << "\n";
++        // }
++
++          // for(auto i : BB)
++          // {
++             
++          //    errs<<i.getName()<<" ";
++          // }
++        //  errs() << "\n";
++        
++  //   }
++  //                  }
++  //  }
++ 
++                    
++  // for(int j =0 ; j<i ; j++)
++  // {
++  //    Node*curr = arr[j];
++  //    while(curr)
++  //    {
++  //     llvm::Twine t = curr->T ; 
++  //     errs() << t << " ";
++  //     curr = curr->next ; 
++  //    }
++  //    errs() << "\n";
++
++
++ 
++ exportToDot(graph, nodeCount, "graph.dot");
+   return PreservedAnalyses::all();
+ }
++
++// extern "C" ::llvm::PassPluginLibraryInfo llvmGetPassPluginInfo() LLVM_ATTRIBUTE_WEAK;
++
++// auto Plugin = PassPlugin::Load(PathToPlugin);
++// if (!Plugin)
++//   report_error();
++// // Register plugin extensions in PassBuilder.
++// Plugin.registerPassBuilderCallbacks(PB);
++
++extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
++llvmGetPassPluginInfo() {
++  return {
++    LLVM_PLUGIN_API_VERSION, "HelloWorld", LLVM_VERSION_STRING,
++    [](PassBuilder &PB) {
++      PB.registerPipelineParsingCallback(
++        [](StringRef Name, ModulePassManager &MPM,
++           ArrayRef<PassBuilder::PipelineElement>) {
++          if (Name == "HelloWorld") {
++            MPM.addPass(HelloWorldPass());
++            return true;
++          }
++          return false;
++        });
++    }
++  };
++}
+\ No newline at end of file
