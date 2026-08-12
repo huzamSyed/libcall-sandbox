@@ -43,10 +43,10 @@ index 0eb050c8ad..6b384af253 100644
  FUNCTION_PASS("infer-address-spaces", InferAddressSpacesPass())
  FUNCTION_PASS("infer-alignment", InferAlignmentPass())
 diff --git a/llvm/lib/Transforms/Utils/HelloWorld.cpp b/llvm/lib/Transforms/Utils/HelloWorld.cpp
-index 1098281fa0..7dd60dbc51 100644
+index 1098281fa0..a30b8f489f 100644
 --- a/llvm/lib/Transforms/Utils/HelloWorld.cpp
 +++ b/llvm/lib/Transforms/Utils/HelloWorld.cpp
-@@ -1,18 +1,1354 @@
+@@ -1,18 +1,1355 @@
 -//===-- HelloWorld.cpp - Example Transformations --------------------------===//
 -//
 -// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
@@ -944,11 +944,12 @@ index 1098281fa0..7dd60dbc51 100644
 +{
 +    
 +}
-+void exportToDot(const vector<vector<gNode>>& graph, int countNode, const string& filename) {
++void exportToDot(const vector<vector<gNode>>& graph, int countNode, const string& filename, int startNode) {
 +    ofstream outfile(filename);
 +
 +    // Start the DOT file
 +    outfile << "digraph G {" << endl;
++    outfile << "    // start:" << startNode << endl;
 +
 +    // Iterate through the adjacency list
 +    for (int i = 0; i < countNode; ++i) {
@@ -1111,7 +1112,7 @@ index 1098281fa0..7dd60dbc51 100644
 +  //  llvm::Function *SyscallFunc = llvm::Function::Create(SyscallType, llvm::Function::ExternalLinkage, "dummy_syscall", M);
 + FunctionType *SyscallType = FunctionType::get(Type::getVoidTy(Ctx), {Type::getInt32Ty(Ctx)}, false);
 +    int num_main ; 
-+    Function *SyscallFunc = Function::Create(SyscallType, Function::ExternalLinkage, "dummy_syscall", M);
++    auto SyscallFunc = M.getOrInsertFunction("dummy_syscall", SyscallType);
 +
 +                Builder.SetInsertPoint(call);
 +            Value *ArgValue = ConstantInt::get(Type::getInt32Ty(Ctx), mp[calledFunc->getName().str()]); // Example argument
@@ -1382,7 +1383,7 @@ index 1098281fa0..7dd60dbc51 100644
 +
 +
 + 
-+ exportToDot(graph, nodeCount, "graph.dot");
++ exportToDot(graph, nodeCount, "graph.dot", cc->val);
    return PreservedAnalyses::all();
  }
 +

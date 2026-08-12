@@ -33,3 +33,14 @@ __pycache__/
 .idea/
 *.swp
 *~
+
+# Generated LLVM/test artifacts
+tests/test.ll
+tests/test.instrumented.ll
+tests/graph.dot
+tests/secure_policy_*.dot
+tests/ex1
+tests/dummy_syscall.c
+
+# Runtime logs
+*.log
